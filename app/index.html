@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photosynth Viewer</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        html,
+        body {
+            font: 16px 'wf_segoe-ui_light', 'Segoe UI Light', 'Segoe WP Light', 'Segoe UI', 'Segoe WP', Tahoma, Arial, sans-serif;
+            overflow: hidden;
+            -ms-content-zooming: none;
+            -ms-touch-action: none;
+            touch-action: none;
+            height: 100%;
+        }
+        
+        #viewer-container {
+            height: 100%;
+            width: 100%;
+            display: none;
+        }
+        
+        .infobox {
+            border-radius: 20px;
+            padding: 20px;
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 5;
+            background-color: white;
+            border: 1px solid black;
+        }
+        
+        #instructions {
+            font-size: 16px;
+            text-align: center;
+            line-height: 1.374;
+        }
+        
+        .smallerText {
+            font-size: 12px;
+            line-height: 1.2;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var _useCompileJS = false;
+    </script>
+    <script type="text/javascript" src="js/embedScripts.js"></script>
+    <script src="pano/jspanoviewer.js"></script>
+    <script src="helpers/external_links.js"></script>
+</head>
+
+<body>
+    <div id="viewer-container"></div>
+
+    <div id='instructions'>
+        <div id='decommissionNotice' style='display:none;'>
+            <br><br>
+            Download photosynths (.zip) and panoramas (.pano) from your account on<br>
+            <a class="js-external-link" href="http://photosynth.net">http://photosynth.net</a>, then drop them here.<br><br>
+            Important:<br>
+            <a class="js-external-link" href="http://photosynth.net">http://photosynth.net</a> will be decommissioned<br>
+            on <strong>February 6th 2017</strong>, and all data will be deleted.
+            <br><br><br><br><br><br>
+        </div>
+        <div>
+            <br><br><br>
+            About
+            <br><br><br>
+            <div class='smallerText'>This viewer is an open source project,<br><br>
+            and is not maintained by Microsoft after February 6th, 2017<br><br><br>
+            <a class="js-external-link" href='https://github.com/photosynth/offlineViewer'>https://github.com/photosynth/offlineViewer</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var serverPath = 'http://127.0.0.1:8000/';
+
+        //Check whether to display decommission notice
+        var todayDate = new Date();
+        var decomissionDate = new Date(2017, 1, 6, 0, 0, 0);
+        if (todayDate < decomissionDate) {
+            document.getElementById('decommissionNotice').style.display = 'block';
+        }
+
+        //Drag and Drop
+        document.ondragover = document.ondrop = (ev) => {
+            ev.preventDefault();
+        }
+        document.body.ondrop = (ev) => {
+            checkAndLoad(serverPath + ev.dataTransfer.files[0].path);
+        }
+
+        //Electron menu
+        var template = [{
+            label: 'Open File...',
+            click: function() {
+                selectFile();
+            }
+        }];
+        const {remote} = require('electron');
+        const {Menu, dialog} = remote;
+        menu = Menu.buildFromTemplate(template);
+        Menu.setApplicationMenu(menu);
+
+        function selectDirectory() {
+            dialog.showOpenDialog({
+                properties: ['openDirectory']
+            }, function(path) {
+                if (path) {
+                    checkAndLoad(path[0]);
+                }
+            });
+        }
+
+        function selectFile() {
+            dialog.showOpenDialog({
+                properties: ['openFile'],
+                filters: [{
+                    name: 'Both',
+                    extensions: ['zip', 'pano']
+                }, {
+                    name: 'Panorama',
+                    extensions: ['pano']
+                }, {
+                    name: 'Photosynth',
+                    extensions: ['zip']
+                }, {
+                    name: 'All Files',
+                    extensions: ['*']
+                }]
+            }, function(path) {
+                if (path) {
+                    checkAndLoad(serverPath + path[0]);
+                }
+            });
+        }
+
+        var _container = document.getElementById("viewer-container");
+        //synth viewer
+        var _viewer;
+
+        //check existance of 0.json and path.bin before proceeding to load the photosynth
+        function checkAndLoad(path) {
+            var subPath = '/formats/cubemap/cubemap.json';
+            var jsonPath = path.split('\\').join('/') + subPath;
+            new PS.Utils.Request(jsonPath, {
+                onComplete: function(xhr) {
+                    if (_viewer) {
+                        _viewer.dispose();
+                    }
+                    _container.style.display = 'block';
+
+                    document.getElementById('instructions').style.display = 'none';
+
+                    var panoJson = JSON.parse(xhr.responseText);
+                    var rml = PhotosynthRml.createFromJson(panoJson, jsonPath);
+
+                    var viewer = new RwwViewer(_container, {
+                        rml: rml,
+                        hideAttribution: true,
+                        renderer: 'webgl'
+                    });
+
+
+                    function setOnresize(elem, callback) {
+                        window.addEventListener('resize', callback, false);
+                    }
+
+                    setOnresize(_container, function() {
+                        if (viewer != null && viewer.setViewportSize != null) {
+                            viewer.setViewportSize(_container.offsetWidth, _container.offsetHeight);
+                        }
+                    });
+                },
+                onError: function(e) {
+                    checkAndLoadSynth();
+                }
+            });
+
+
+            var onePassed = false;
+            var oneFailed = false;
+
+            function checkAndLoadSynth() {
+
+                checkFile('0.json');
+                checkFile('path.bin');
+
+                function checkFile(fileName) {
+                    new PS.Utils.Request(path + "/" + fileName, {
+                        onComplete: function(xhr) {
+                            if (onePassed) {
+                                document.getElementById('instructions').style.display = 'none';
+                                loadFromPath(path);
+                            }
+                            onePassed = true;
+                        },
+                        onError: function(e) {
+                            dialog.showErrorBox('Unable to load as Photosynth', fileName + ' is required inside the Photosynth ZIP archive');
+                            if (!oneFailed) {
+                                dialog.showErrorBox('Unable to load as panorama', subPath + ' is required inside the panorama archive')
+                            }
+                            oneFailed = true;
+                        }
+                    });
+                }
+            }
+        }
+
+        function loadFromPath(path) {
+            if (_viewer) {
+                _viewer.dispose();
+            }
+            _container.style.display = 'block';
+
+            _viewer = new Photosynth.PS2Viewer(_container, {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                autoStart: false,
+                pathToWorker: _pathToWorkerParser,
+                autoResizeEnabled: true,
+                annotateEnabled: false,
+                debugMenuEnabled: true
+            });
+            //create the annotation viewer
+            //(you need to create the annotation viewer before loading a synth = before calling _viewer.loadGuid)
+            var _annotationViewer = new Photosynth.PS2AnnotationViewer(_viewer, {
+                editEnabled: false,
+                visibleInFullscreen: true
+            });
+
+
+            //load some annotations in the annotation viewer
+            _annotationViewer.addEventListener("init", function() {
+                new PS.Utils.Request(path + "/metadata.json", {
+                    onComplete: function(xhr) {
+                        _annotationViewer.load(JSON.parse(xhr.responseText).annotations);
+                    },
+                    onError: function(e) {
+                        dialog.showMessageBox({
+                            type: 'warning',
+                            title: 'Warning',
+                            message: 'metadata.json was not found inside the Photosynth ZIP archive',
+                            detail: 'metadata.json contains annotations.  Attempting to proceed without it.',
+                            buttons: ['OK']
+                        });
+                    }
+                });
+            });
+
+            //load the synth in the viewer
+            _viewer.load(path + '/', {
+                startCameraIndex: -1
+            });
+        }
+    </script>
+</body>
+</html>
