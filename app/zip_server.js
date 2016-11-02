@@ -1,8 +1,11 @@
 var http = require('http');
 var StreamZip = require('node-stream-zip');
+var detect = require('detect-port');
 var previousPath = '';
 
 var zip = null;
+
+
 
 var server = http.createServer(function(request, response) {
 
@@ -71,4 +74,11 @@ var server = http.createServer(function(request, response) {
     }
 });
 
-server.listen(8000);
+
+
+var port = 8000;
+
+detect(port, (err, _port) => {
+  global.sharedObj = {port: _port};
+    server.listen(_port);
+});
