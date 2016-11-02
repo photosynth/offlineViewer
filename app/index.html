@@ -84,8 +84,10 @@
     </div>
 
     <script>
-        var serverPath = 'http://127.0.0.1:8000/';
 
+        const {remote} = require('electron');
+
+        var serverSubPath='http://127.0.0.1:';
         //Check whether to display decommission notice
         var todayDate = new Date();
         var decomissionDate = new Date(2017, 1, 6, 0, 0, 0);
@@ -98,18 +100,32 @@
             ev.preventDefault();
         }
         document.body.ondrop = (ev) => {
-            checkAndLoad(serverPath + ev.dataTransfer.files[0].path);
+            checkAndLoad('http://127.0.0.1:'+remote.getGlobal('sharedObj').port+'/' + ev.dataTransfer.files[0].path);
         }
 
         //Electron menu
-        var template = [{
-            label: 'Open File...',
-            click: function() {
-                selectFile();
-            }
-        }];
-        const {remote} = require('electron');
-        const {Menu, dialog} = remote;
+        const {Menu, dialog, app} = remote;
+        if (process.platform === 'win32') {
+            var template = [{
+                label: 'Open File...',
+                click: function() {
+                    selectFile();
+                }
+            }];
+        } else {
+            var template = [{
+                label: app.getName(),
+                submenu: [{role: 'quit'}]
+            },{
+                label: 'File',
+                submenu: [{
+                    label: 'Open Folder',
+                    click: function() {
+                        selectDirectory();
+                    }
+                }]
+            }];
+        }
         menu = Menu.buildFromTemplate(template);
         Menu.setApplicationMenu(menu);
 
@@ -141,7 +157,7 @@
                 }]
             }, function(path) {
                 if (path) {
-                    checkAndLoad(serverPath + path[0]);
+                    checkAndLoad('http://127.0.0.1:'+remote.getGlobal('sharedObj').port+'/' + path[0]);
                 }
             });
         }
