@@ -93,6 +93,7 @@
 
         //Drag and Drop
         document.ondragover = document.ondrop = (ev) => {
+            ev.dataTransfer.dropEffect  = "copy";
             ev.preventDefault();
         }
         document.body.ondrop = (ev) => {
@@ -161,6 +162,18 @@
         var _container = document.getElementById("viewer-container");
         //synth viewer
         var _viewer;
+        var _pano_viewer;
+
+        function dispose_current_viewer(){
+        	if (_viewer) {
+                _viewer.dispose();
+            }
+            if (_pano_viewer) {
+                _pano_viewer.dispose();
+            }
+            _container.style.display = 'block';
+            document.getElementById('instructions').style.display = 'none';
+        }
 
         //check existance of 0.json and path.bin before proceeding to load the photosynth
         function checkAndLoad(path) {
@@ -168,17 +181,12 @@
             var jsonPath = path.split('\\').join('/') + subPath;
             new PS.Utils.Request(jsonPath, {
                 onComplete: function(xhr) {
-                    if (_viewer) {
-                        _viewer.dispose();
-                    }
-                    _container.style.display = 'block';
-
-                    document.getElementById('instructions').style.display = 'none';
+                    dispose_current_viewer();
 
                     var panoJson = JSON.parse(xhr.responseText);
                     var rml = PhotosynthRml.createFromJson(panoJson, jsonPath);
 
-                    var viewer = new RwwViewer(_container, {
+                    _pano_viewer = new RwwViewer(_container, {
                         rml: rml,
                         hideAttribution: true,
                         renderer: 'webgl'
@@ -190,8 +198,8 @@
                     }
 
                     setOnresize(_container, function() {
-                        if (viewer != null && viewer.setViewportSize != null) {
-                            viewer.setViewportSize(_container.offsetWidth, _container.offsetHeight);
+                        if (_pano_viewer != null && _pano_viewer.setViewportSize != null) {
+                            _pano_viewer.setViewportSize(_container.offsetWidth, _container.offsetHeight);
                         }
                     });
                 },
@@ -213,7 +221,6 @@
                     new PS.Utils.Request(path + "/" + fileName, {
                         onComplete: function(xhr) {
                             if (onePassed) {
-                                document.getElementById('instructions').style.display = 'none';
                                 loadFromPath(path);
                             }
                             onePassed = true;
@@ -231,10 +238,7 @@
         }
 
         function loadFromPath(path) {
-            if (_viewer) {
-                _viewer.dispose();
-            }
-            _container.style.display = 'block';
+            dispose_current_viewer();
 
             _viewer = new Photosynth.PS2Viewer(_container, {
                 width: window.innerWidth,
