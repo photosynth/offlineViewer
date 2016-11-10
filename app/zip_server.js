@@ -8,6 +8,10 @@ var zip = null;
 
 
 var server = http.createServer(function(request, response) {
+	var responseStreamOpen=true;
+	response.on('finish', () => {
+	  responseStreamOpen=false;
+	});
 
     try {
 
@@ -39,11 +43,7 @@ var server = http.createServer(function(request, response) {
             });
         } else {
             zip.stream(entryPath, function(err, stm) {
-                if (stm) {
-                    stm.pipe(response);
-                } else {
-        			serveError();
-                }
+            	pipeResponse(stm);
             });
         }
 
@@ -53,24 +53,33 @@ var server = http.createServer(function(request, response) {
 
         zip.on('ready', function() {
             zip.stream(entryPath, function(err, stm) {
-                if (stm) {
-                    stm.pipe(response);
-                } else {
-                    serveError();
-                }
+            pipeResponse(stm);
             });
         });
 
     } catch (e) {
+
         serveError();
     }
 
+    function pipeResponse(stm) {
+        if (stm) {
+        	if (responseStreamOpen) {
+            	stm.pipe(response);
+            }
+        } else {
+			serveError();
+        }
+    }
+
     function serveError(){
-    	response.writeHead(500, {
-            "Content-Type": "text/plain"
-        });
-        response.write("500 Error");
-        response.end();
+        if (responseStreamOpen) {
+	    	response.writeHead(500, {
+	            "Content-Type": "text/plain"
+	        });
+	        response.write("500 Error");
+	        response.end();
+    	}
     }
 });
 
