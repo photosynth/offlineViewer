@@ -34,12 +34,12 @@ var _pathToWorkerParser;
 _useCompileJS = true;
 
 if (_useCompileJS) {
-	_pathToWorkerParser = "build/js/PS2PacketPlayer.worker.min.js";
+	_pathToWorkerParser = "synth/build/js/PS2PacketPlayer.worker.min.js";
 
-	document.write('<link rel="stylesheet" type="text/css" href="build/css/PS2PacketPlayer.min.css" />');
+	document.write('<link rel="stylesheet" type="text/css" href="synth/build/css/PS2PacketPlayer.min.css" />');
 
-	document.write('<script type="text/javascript" src="build/js/PS2PacketPlayer.min.js"></script>');
-	document.write('<script type="text/javascript" src="build/js/PS2API.min.js"></script>');
+	document.write('<script type="text/javascript" src="synth/build/js/PS2PacketPlayer.min.js"></script>');
+	document.write('<script type="text/javascript" src="synth/build/js/PS2API.min.js"></script>');
 }
 else {
 	_pathToWorkerParser = "../src/PacketPlayer/PacketViewer/WorkerParser.js";
