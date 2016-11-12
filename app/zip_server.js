@@ -1,9 +1,8 @@
 var http = require('http');
 var StreamZip = require('node-stream-zip');
 var detect = require('detect-port');
-var previousPath = '';
 
-var zip = null;
+var zips = {};
 
 
 
@@ -34,25 +33,24 @@ var server = http.createServer(function(request, response) {
             var entryPath = splitSubPath.join(slash).substr(1);
         }
 
-        if (previousPath !== currentPath) {
-            previousPath = currentPath;
+        if (currentPath in zips) {
+            zips[currentPath].stream(entryPath, function(err, stm) {
+            	pipeResponse(stm);
+            });
+        } else {
             // new zip file
-            zip = new StreamZip({
+            zips[currentPath] = new StreamZip({
                 file: currentPath,
                 storeEntries: true
             });
-        } else {
-            zip.stream(entryPath, function(err, stm) {
-            	pipeResponse(stm);
-            });
         }
 
-        zip.on('error', function(err) {
+        zips[currentPath].on('error', function(err) {
         	serveError();
         });
 
-        zip.on('ready', function() {
-            zip.stream(entryPath, function(err, stm) {
+        zips[currentPath].on('ready', function() {
+            zips[currentPath].stream(entryPath, function(err, stm) {
             pipeResponse(stm);
             });
         });
