@@ -1,9 +1,17 @@
-An Electron-based app for Windows and OSX to view offline Photosynths and panoramas
+An Electron-based app for Windows, OSX, and Linux to view offline Photosynths and panoramas
 
-## Installation
-#### Install Node.js and NPM. Run the following inside this directory
+### Build Instructions
+#### Install Node.js with NPM. Run the following inside this directory
 ```
 npm install
 npm run release
 ```
-The installer will be in the `dist` directory.  A folder with a portable distribution will be there as well.
+
+### Folder Structure
+`app/synth` contains the photosynth viewer
+
+`app/pano/jspanoviewer.js` contains the panorama viewer
+
+`app/zip_server.js` contains the code for reading from zip files`
+
+After building, the installer will be in the `dist` directory.  A portable distribution will be there as well.
