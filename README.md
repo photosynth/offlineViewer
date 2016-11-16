@@ -6,7 +6,7 @@ An Electron-based app for Windows, OS X, and Linux to view offline Photosynths a
 npm install
 npm run release
 ```
-
+After building, the installer will be in the `dist` directory.  A portable distribution will be there as well.
 ### Folder Structure
 `app/synth` contains the photosynth viewer
 
@@ -14,4 +14,3 @@ npm run release
 
 `app/zip_server.js` contains the code for reading from zip files`
 
-After building, the installer will be in the `dist` directory.  A portable distribution will be there as well.
