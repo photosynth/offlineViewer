@@ -1,4 +1,4 @@
-An Electron-based app for Windows, OSX, and Linux to view offline Photosynths and panoramas
+An Electron-based app for Windows, OS X, and Linux to view offline Photosynths and panoramas
 
 ### Build Instructions
 #### Install Node.js with NPM. Run the following inside this directory
