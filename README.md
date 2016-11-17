@@ -12,5 +12,5 @@ After building, the installer will be in the `dist` directory.  A portable distr
 
 `app/pano/jspanoviewer.js` contains the panorama viewer
 
-`app/zip_server.js` contains the code for reading from zip files`
+`app/zip_server.js` contains the code for reading from zip files
 
